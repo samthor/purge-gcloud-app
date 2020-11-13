@@ -1,0 +1,17 @@
+{
+  "name": "purge-gcloud-app",
+  "version": "0.1.0",
+  "description": "Purge old gcloud deployed App Engine versions",
+  "main": "index.js",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/samthor/purge-gcloud-app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samthor/purge-gcloud-app.git"
+  },
+  "author": "Sam Thorogood <sam.thorogood@gmail.com>",
+  "dependencies": {
+    "pretty-ms": "^7.0.1"
+  }
+}
