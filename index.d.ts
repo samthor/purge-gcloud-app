@@ -5,6 +5,6 @@ export interface PurgeOptions {
   keepMinimum?: number,
   keepDailyAmount?: number,
   log?: (string) => void,
-};
+}
 
 export default function(options: PurgeOptions): number;

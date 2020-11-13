@@ -22,10 +22,10 @@
 
 const keepMinimumDefault = 20;
 const keepDailyAmountDefault = 7;
-const deleteAtMost = 4; // deleting is slow
+const deleteAtMost = 5; // deleting is slow
 
-const childProcess = require('child_process');
-const prettyMs = require('pretty-ms');
+import childProcess from 'child_process';
+import prettyMs from 'pretty-ms';
 
 /**
  * Retrieve parsed information for all deployed versions.
@@ -34,16 +34,18 @@ const prettyMs = require('pretty-ms');
  * @return {!Array<!Object>}
  */
 function fetchVersions(options) {
-  const {project, service} = options;
-  const {status, stdout} = childProcess.spawnSync(
+  const {log, project, service} = options;
+  const {status, stdout, stderr} = childProcess.spawnSync(
     'gcloud',
     ['app', '--project', project, 'versions', 'list', '--service', service, '--format="json"'],
     {
       input: '',
       timeout: 20 * 1000,
+      maxBuffer: 1024 * 1024 * 32,  // 1mb default is not enough for >1000 versions
     },
   );
-  if (status !== 0) {
+  if (status) {
+    log(stderr);
     throw new Error(`could not list versions: ${status}`);
   }
   return JSON.parse(stdout);
@@ -76,7 +78,7 @@ function deleteVersions(options, versions) {
     const next = versions.splice(0, deleteAtMost);
     log(`Enacting deletion for versions: ${next.join(' ')}`);
 
-    const {status, stdout, stderr} = childProcess.spawnSync(
+    const {status, stdout} = childProcess.spawnSync(
       'gcloud',
       [
         'app',
@@ -94,13 +96,11 @@ function deleteVersions(options, versions) {
         timeout: 60 * 1000,
       },
     );
-    process.stderr.write(stderr);
-    if (status !== 0) {
+    if (status) {
       log(`Could not delete versions: ${status}`);
       break;
     }
     done += next.length;
-    console.info(JSON.parse(stdout));
   }
   return done;
 }
@@ -116,13 +116,14 @@ function purgeOldVersionsFor(options) {
 
   options = Object.assign({
     service: 'default',
-    log: (s) => console.info(s),
+    log: s => console.info(s),
   }, options);
+  console.info('got options', options);
 
   const {log, project, service} = options;
 
   let candidates = [];
-  const versions = fetchVersions(project);
+  const versions = fetchVersions(options);
 
   for (const v of versions) {
     if (
@@ -168,25 +169,28 @@ function purgeOldVersionsFor(options) {
 
     const key = lastDeployed.toISOString().substr(0, 10);
     if (versionsForDays.has(key) && versionsForDays.get(key) === null) {
-      log(`Keeping for ${key}: ${id} (${deployedString})`);
+      log(`Keep ${key}: ${id} (${deployedString})`);
       versionsForDays.set(key, id);
       return false; // safe from deletion
     }
 
     if (keptRecentVersions.length < keepMinimum) {
-      log(`Keeping for recent ${keptRecentVersions.length + 1}: ${id} (${deployedString})`);
       keptRecentVersions.push(id);
+      const i = keptRecentVersions.length;
+      log(`Keep recent ${`${i}`.padStart(3)}: ${id} (${deployedString})`);
       return false; // safe from deletion
     }
 
-    log(`Deleting ${id} ${deployedString}`);
+    log(`Deleting ${id} (${deployedString})`);
     return true;
   });
 
+  // Delete the oldest versions first.
+  candidates.sort(({lastDeployed: a}, {lastDeployed: b}) => a - b);
+
   const count = deleteVersions(
-    project,
+    options,
     candidates.map(({id}) => id),
-    service,
   );
 
   // If deletions were requested but none completed, fail.
@@ -195,4 +199,4 @@ function purgeOldVersionsFor(options) {
   }
 }
 
-module.exports = purgeOldVersionsFor;
+export default purgeOldVersionsFor;
