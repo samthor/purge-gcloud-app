@@ -1,6 +1,6 @@
 {
   "name": "purge-gcloud-app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Purge old gcloud deployed App Engine versions",
   "main": "index.js",
   "type": "module",
@@ -13,5 +13,8 @@
   "author": "Sam Thorogood <sam.thorogood@gmail.com>",
   "dependencies": {
     "pretty-ms": "^7.0.1"
+  },
+  "bin": {
+    "purge-gcloud-app": "./run.js"
   }
 }

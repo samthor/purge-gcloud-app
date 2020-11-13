@@ -3,7 +3,6 @@ Install via [`purge-gcloud-app`](https://www.npmjs.com/package/purge-gcloud-app)
 
 This just farms out to `gcloud` and will use whatever credentials are available in your environment.
 Even though this task is fundamentally async, we block in Node until complete.
-Wrap this in a tiny helper binary.
 
 ## Usage
 
@@ -20,3 +19,5 @@ const deletedVersionCount = purgeGcloudApp({
   log: (s) => console.info(s),
 });
 ```
+
+There's also a binary `purge-gcloud-app` which just takes a single argument the project ID, and otherwise uses all defaults.
